@@ -26,13 +26,13 @@ namespace Application.Services
         {
             var providerName = request.Provider?.Trim().ToLowerInvariant();
             if (string.IsNullOrEmpty(providerName))
-                return new VmProvisionResult { Success = false, Error = "provider is required" };
+                return new VmProvisionResult { Success = false, Error = "el provedor es obligatorio" };
 
             var factory = _resolver.GetFactoryByName(providerName);
             if (factory is null)
             {
-                _logger.LogWarning("Provider '{Provider}' not found", providerName);
-                return new VmProvisionResult { Success = false, Error = $"unknown provider '{providerName}'" };
+                _logger.LogWarning("provedor '{Provider}'", providerName);
+                return new VmProvisionResult { Success = false, Error = $"provedor desconocido '{providerName}'" };
             }
 
             var provisioner = factory.CreateProvisioner(null!);
@@ -46,32 +46,32 @@ namespace Application.Services
                     "azure" => request.Parameters.Deserialize<AzureProvisionDto>()!,
                     "gcp" => request.Parameters.Deserialize<GcpProvisionDto>()!,
                     "onpremise" => request.Parameters.Deserialize<OnPremProvisionDto>()!,
-                    _ => throw new InvalidOperationException("unsupported provider")
+                    _ => throw new InvalidOperationException("proveedor no soportado")
                 };
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Invalid parameter format for provider {Provider}", providerName);
-                return new VmProvisionResult { Success = false, Error = "invalid parameters" };
+                _logger.LogWarning(ex, "parametros invalos para el proveedor {Provider}", providerName);
+                return new VmProvisionResult { Success = false, Error = "Parametros invalidos" };
             }
 
-            _logger.LogInformation("Starting provisioning: provider={Provider}, requestId={RequestId}", providerName, request.RequestId);
+            _logger.LogInformation("Iniciando aprovisionamiento: provider={Provider}, requestId={RequestId}", providerName, request.RequestId);
 
             try
             {
                 var result = await provisioner.ProvisionAsync(typedParams, ct);
 
                 if (result.Success)
-                    _logger.LogInformation("Provisioned successfully: {Provider} -> {VmId}", providerName, result.VmId);
+                    _logger.LogInformation("Aprovisionamiento exitoso: {Provider} -> {VmId}", providerName, result.VmId);
                 else
-                    _logger.LogWarning("Provision failed: {Provider} -> {Error}", providerName, result.Error);
+                    _logger.LogWarning("Aprovisionamiento fallido: {Provider} -> {Error}", providerName, result.Error);
 
                 return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error provisioning {Provider}", providerName);
-                return new VmProvisionResult { Success = false, Error = "unexpected error" };
+                _logger.LogError(ex, "Error de  aprovisionamiento {Provider}", providerName);
+                return new VmProvisionResult { Success = false, Error = "Error" };
             }
         }
     }
